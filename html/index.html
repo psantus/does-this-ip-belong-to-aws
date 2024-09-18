@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Does this IP belong to AWS?</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsonata/jsonata.min.js"></script>
+    <script>
+    const json = loadJSON('https://ip-ranges.amazonaws.com/ip-ranges.json');
+
+    function loadJSON(url) {
+      let request = new XMLHttpRequest();
+
+      request.open('GET', url, false);
+      request.onreadystatechange = function() {
+        if (request.readyState == 4 && request.status == 200) {
+          const data = JSON.parse(request.responseText);
+        }
+      };
+      request.send();
+      return JSON.parse(request.responseText);
+  	}
+
+  	function checkIpAddress(ip) {
+      const ipv4Pattern =
+        /^(\d{1,3}\.){3}\d{1,3}$/;
+      const ipv6Pattern =
+        /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+      return ipv4Pattern.test(ip) || ipv6Pattern.test(ip);
+    }
+
+    async function find(json) {
+      var ip = document.getElementById('ip').value;
+      if (ip ==null || !!!checkIpAddress(ip)) {
+        document.getElementById('result').innerHTML = "Please enter a valid IP";
+        return;
+      }
+
+      var expression = jsonata(`(
+    	this.timeout = 300;
+    	$cidrIp := function($cidr){$split($cidr, '/')[0]};
+ 	   	$cidrMask := function($cidr){$number($split($cidr, '/')[1])};
+    	$IpDecimal := function($ip){$number($split($ip,'.')[0])*$power(256,3)+$number($split($ip,'.')[1])*$power(256,2)+$number($split($ip,'.')[2])*$power(256,1)+$number($split($ip,'.')[3])};
+    	$startIpDecimal := function($cidr){$IpDecimal($cidrIp($cidr))};
+    	$endIpDecimal := function($cidr){$startIpDecimal($cidr)+$power(2,32-$cidrMask($cidr))-1};
+    	$range := function($cidr){[$startIpDecimal($cidr), $endIpDecimal($cidr)]};
+    	$isIpInCidr := function($ip, $cidr){$IpDecimal($ip)>=$startIpDecimal($cidr) and $IpDecimal($ip)<=$endIpDecimal($cidr)};
+    	prefixes[$isIpInCidr("`+ ip + `",ip_prefix)]
+	  )`);
+      var result = await expression.evaluate(json);
+      if (result != null) {
+         document.getElementById('result').innerHTML = JSON.stringify(result, null, 4);
+      }
+      else {
+         document.getElementById('result').innerHTML = "IP doesn't belong to AWS";
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <input id="ip" type="text" placeHolder="3.5.140.2"></input>
+    <button id="trigger" onclick="find(json)">Lookup</button>
+    <pre id="result"></pre>
+  </body>
+</html>
