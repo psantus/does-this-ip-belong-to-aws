@@ -3,12 +3,17 @@ This repository contains helpers to determine whether an IP belongs to AWS,
 and if it does, which AWS service and region use it.
 
 # HTML
-This helper relies on JSONata, a powerful query and transformation language for JSON. See https://jsonata.org
+This helper relies on JSONata, a powerful query and transformation language for JSON.
+See https://jsonata.org
+
+You can find the raw script in this repo or visit [does-this-ip-belong-to-aws.terracloud.fr](https://does-this-ip-belong-to-aws.terracloud.fr) to see it in action!
+
+[![See it in action!](screenshot.png)](https://does-this-ip-belong-to-aws.terracloud.fr)
 
 # Python script
 For use in a shell, a convenient python script using only base libraries.
 
-Example: `awsip.py 3.5.140.3 ` returns:
+Example: `python3 awsip.py 3.5.140.3 ` returns:
 ```
 [
     {
